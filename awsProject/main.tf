@@ -31,13 +31,44 @@ data "aws_ami" "ami" {
     }
 }
 
+resource "aws_key_pair" "ec2_key"{
+    key_name = var.access_key_name
+    public_key = file(var.pub_key_path)
+}
 
 resource "aws_instance" "jump_box"{
     ami = data.aws_ami.ami.id
     instance_type = var.instance_type
     subnet_id = aws_subnet.subnet1.id
     security_groups = [aws_security_group.demo_sg.id]
+    key_name = aws_key_pair.ec2_key.id
+    associate_public_ip_address = true
+
+    connection {
+        type = "ssh"
+        host = self.public_ip
+        user = "ec2-user"
+        private_key = file(var.private_key_path)
+    }
+    # provisioner "remote-exec" {
+    #     inline = [
+    #         "sudo mkdir test"
+    #     ]
+    # }
+    provisioner file {
+        source = "script.sh"
+        destination = "/home/ec2-user/script.sh"
+    }
+    
+    provisioner "remote-exec" {
+        script = file("script.sh")
+    }
 }
+
+output  "public_ip" {
+  value = aws_instance.jump_box.public_ip 
+}
+
 
 resource "aws_security_group" "demo_sg"{
     name = "Demo-SG"
