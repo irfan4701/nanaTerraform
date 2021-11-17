@@ -41,4 +41,3 @@ output "subnet_id" {
 	value = aws_subnet.dev-subnet.id
 }
 
-#this is test line
